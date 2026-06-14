@@ -21,7 +21,7 @@
       align-items: center;
       justify-content: center;
       padding: 32px 24px;
-      gap: 56px;
+      gap: 40px;
     }
 
     .board {
@@ -59,6 +59,9 @@
         inset 0 4px 8px rgba(255,255,255,0.45);
       transition: transform 0.1s ease, box-shadow 0.1s ease;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
       overflow: hidden;
     }
 
@@ -87,6 +90,23 @@
         0 2px 0 0 color-mix(in srgb, var(--c2) 70%, #000),
         0 6px 12px -4px rgba(0,0,0,0.55),
         inset 0 4px 8px rgba(255,255,255,0.35);
+    }
+
+    /* Estado: meme en loop (mantenido >2s) */
+    .btn.looping {
+      animation: pulse 1s ease-in-out infinite;
+    }
+    .btn.looping::after {
+      content: "🔁";
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      font-size: 1.4rem;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 12px 0 0 color-mix(in srgb, var(--c2) 70%, #000), 0 22px 30px -6px rgba(0,0,0,0.55), inset 0 4px 8px rgba(255,255,255,0.45), 0 0 0 0 rgba(255,255,255,0.5); }
+      50%      { box-shadow: 0 12px 0 0 color-mix(in srgb, var(--c2) 70%, #000), 0 22px 30px -6px rgba(0,0,0,0.55), inset 0 4px 8px rgba(255,255,255,0.45), 0 0 28px 6px rgba(255,255,255,0.55); }
     }
 
     .btn .emoji {
@@ -129,7 +149,6 @@
       text-shadow: 0 2px 3px rgba(0,0,0,0.4);
     }
 
-    /* El track de la palanca */
     .toggle {
       position: relative;
       width: 110px;
@@ -142,7 +161,6 @@
       transition: background 0.25s ease, box-shadow 0.25s ease;
     }
 
-    /* La perilla */
     .toggle .knob {
       position: absolute;
       top: 50%;
@@ -160,6 +178,75 @@
     .toggle.on .knob { left: 56px; }
 
     .switch .state { font-size: 0.85rem; opacity: 0.65; letter-spacing: 1px; }
+
+    /* ----- Controles de volumen ----- */
+    .volumes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 36px;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 720px;
+      padding: 22px 26px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .vol {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: #fff;
+      flex: 1 1 280px;
+    }
+
+    .vol .vlabel {
+      font-size: 0.95rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .vol input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.18);
+      outline: none;
+      cursor: pointer;
+    }
+    .vol input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(160deg, #ffffff, #c9c9d4);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+      cursor: pointer;
+    }
+    .vol input[type="range"]::-moz-range-thumb {
+      width: 26px;
+      height: 26px;
+      border: none;
+      border-radius: 50%;
+      background: linear-gradient(160deg, #ffffff, #c9c9d4);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+      cursor: pointer;
+    }
+    .vol .vval { font-size: 0.85rem; opacity: 0.7; width: 38px; text-align: right; }
+
+    .hint {
+      color: #fff;
+      opacity: 0.5;
+      font-size: 0.85rem;
+      text-align: center;
+      max-width: 460px;
+    }
   </style>
 </head>
 <body>
@@ -196,38 +283,112 @@
       </div>
       <span class="state">OFF</span>
     </div>
+
+    <div class="switch">
+      <span class="name">🪩 Sikidim</span>
+      <div class="toggle" data-loop="sounds/loop-sikidim.mp3" role="switch" aria-checked="false" tabindex="0">
+        <span class="knob"></span>
+      </div>
+      <span class="state">OFF</span>
+    </div>
   </div>
 
+  <div class="volumes">
+    <div class="vol">
+      <span class="vlabel">🔊 Botones</span>
+      <input type="range" id="vol-buttons" min="0" max="100" value="80" />
+      <span class="vval" id="vval-buttons">80%</span>
+    </div>
+    <div class="vol">
+      <span class="vlabel">🎚️ Palancas</span>
+      <input type="range" id="vol-loops" min="0" max="100" value="60" />
+      <span class="vval" id="vval-loops">60%</span>
+    </div>
+  </div>
+
+  <p class="hint">Tip: mantén presionado un botón más de 2&nbsp;segundos para dejar su meme en loop. Vuelve a tocarlo para quitarlo.</p>
+
   <script>
-    // Botones de un disparo
+    const HOLD_MS = 2000;
+
+    // ----- Botones de meme (tap = 1 disparo, hold >2s = loop) -----
+    const buttonAudios = [];
+
     document.querySelectorAll('.btn[data-sound]').forEach((btn) => {
       const audio = new Audio(btn.dataset.sound);
       audio.preload = 'auto';
-      btn.addEventListener('click', () => {
+      buttonAudios.push(audio);
+
+      let holdTimer = null;
+      let longPressed = false;
+      let looping = false;
+
+      const startLoop = () => {
+        looping = true;
+        audio.loop = true;
         audio.currentTime = 0;
         audio.play();
+        btn.classList.add('looping');
+      };
+
+      const stopLoop = () => {
+        looping = false;
+        audio.loop = false;
+        audio.pause();
+        btn.classList.remove('looping');
+      };
+
+      const playOnce = () => {
+        audio.loop = false;
+        audio.currentTime = 0;
+        audio.play();
+      };
+
+      const onDown = (e) => {
+        e.preventDefault();
+        longPressed = false;
         btn.classList.add('pressed');
-        setTimeout(() => btn.classList.remove('pressed'), 130);
-      });
+        holdTimer = setTimeout(() => {
+          longPressed = true;
+          startLoop();
+        }, HOLD_MS);
+      };
+
+      const onUp = () => {
+        clearTimeout(holdTimer);
+        btn.classList.remove('pressed');
+        if (longPressed) return;          // el loop acaba de arrancar por hold
+        if (looping) { stopLoop(); }      // tap mientras loopea => quita
+        else { playOnce(); }              // tap normal => 1 disparo
+      };
+
+      const onCancel = () => {
+        clearTimeout(holdTimer);
+        btn.classList.remove('pressed');
+      };
+
+      btn.addEventListener('pointerdown', onDown);
+      btn.addEventListener('pointerup', onUp);
+      btn.addEventListener('pointerleave', onCancel);
+      btn.addEventListener('contextmenu', (e) => e.preventDefault());
     });
 
-    // Palancas de loop continuo
+    // ----- Palancas de loop continuo -----
+    const loopAudios = [];
+
     document.querySelectorAll('.toggle[data-loop]').forEach((toggle) => {
       const audio = new Audio(toggle.dataset.loop);
       audio.loop = true;
       audio.preload = 'auto';
+      loopAudios.push(audio);
       const state = toggle.parentElement.querySelector('.state');
 
       const flip = () => {
         const on = toggle.classList.toggle('on');
         toggle.setAttribute('aria-checked', on ? 'true' : 'false');
         state.textContent = on ? 'ON' : 'OFF';
-        if (on) {
-          audio.currentTime = 0;
-          audio.play();
-        } else {
-          audio.pause();
-        }
+        if (on) { audio.currentTime = 0; audio.play(); }
+        else { audio.pause(); }
       };
 
       toggle.addEventListener('click', flip);
@@ -235,6 +396,22 @@
         if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); }
       });
     });
+
+    // ----- Controles de volumen -----
+    function wireVolume(sliderId, valId, audios) {
+      const slider = document.getElementById(sliderId);
+      const val = document.getElementById(valId);
+      const apply = () => {
+        const v = slider.value / 100;
+        audios.forEach((a) => { a.volume = v; });
+        val.textContent = slider.value + '%';
+      };
+      slider.addEventListener('input', apply);
+      apply(); // valor inicial
+    }
+
+    wireVolume('vol-buttons', 'vval-buttons', buttonAudios);
+    wireVolume('vol-loops', 'vval-loops', loopAudios);
   </script>
 </body>
 </html>
