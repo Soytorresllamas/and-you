@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>and-you · soundboard</title>
+  <style>
+    :root {
+      --bg-1: #1b1233;
+      --bg-2: #3a1d5c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at 50% 0%, var(--bg-2), var(--bg-1) 70%);
+      font-family: "Baloo 2", "Comic Sans MS", system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      gap: 56px;
+    }
+
+    .board {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 48px;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    /* Botón 3D brillante totalmente redondo */
+    .btn {
+      --c1: #ff6a6a;
+      --c2: #d62828;
+      position: relative;
+      width: clamp(150px, 26vw, 220px);
+      aspect-ratio: 1 / 1;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 20px;
+      color: #fff;
+      font-family: inherit;
+      background: linear-gradient(160deg, var(--c1) 0%, var(--c2) 100%);
+      box-shadow:
+        0 12px 0 0 color-mix(in srgb, var(--c2) 70%, #000),
+        0 22px 30px -6px rgba(0,0,0,0.55),
+        inset 0 4px 8px rgba(255,255,255,0.45);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    /* Brillo superior tipo burbuja */
+    .btn::before {
+      content: "";
+      position: absolute;
+      top: 9%;
+      left: 16%;
+      width: 68%;
+      height: 34%;
+      border-radius: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0));
+      pointer-events: none;
+    }
+
+    .btn:nth-child(2) { --c1: #ffd86b; --c2: #f4a300; color: #5a3b00; }
+    .btn:nth-child(3) { --c1: #6bc5ff; --c2: #1f7ae0; }
+
+    .btn:hover { transform: translateY(-3px); }
+
+    .btn:active,
+    .btn.pressed {
+      transform: translateY(10px);
+      box-shadow:
+        0 2px 0 0 color-mix(in srgb, var(--c2) 70%, #000),
+        0 6px 12px -4px rgba(0,0,0,0.55),
+        inset 0 4px 8px rgba(255,255,255,0.35);
+    }
+
+    .btn .emoji {
+      font-size: clamp(3rem, 9vw, 4.5rem);
+      line-height: 1;
+      filter: drop-shadow(0 3px 3px rgba(0,0,0,0.25));
+    }
+
+    .btn .label {
+      font-size: clamp(1rem, 2.8vw, 1.4rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
+      text-shadow: 0 2px 2px rgba(0,0,0,0.25);
+    }
+
+    /* ----- Palancas de loop ----- */
+    .switches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .switch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #fff;
+    }
+
+    .switch .name {
+      font-size: 1.05rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 3px rgba(0,0,0,0.4);
+    }
+
+    /* El track de la palanca */
+    .toggle {
+      position: relative;
+      width: 110px;
+      height: 56px;
+      border-radius: 999px;
+      background: #2a2342;
+      border: 3px solid rgba(255,255,255,0.15);
+      box-shadow: inset 0 4px 8px rgba(0,0,0,0.55);
+      cursor: pointer;
+      transition: background 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    /* La perilla */
+    .toggle .knob {
+      position: absolute;
+      top: 50%;
+      left: 6px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      transform: translateY(-50%);
+      background: linear-gradient(160deg, #ffffff, #c9c9d4);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.8);
+      transition: left 0.25s cubic-bezier(0.4, 1.6, 0.5, 1);
+    }
+
+    .toggle.on { background: linear-gradient(160deg, #38d97a, #19a85a); box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 0 22px rgba(56,217,122,0.7); }
+    .toggle.on .knob { left: 56px; }
+
+    .switch .state { font-size: 0.85rem; opacity: 0.65; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+  <div class="board">
+    <button class="btn" data-sound="sounds/exselent.mp3">
+      <span class="emoji">😎</span>
+      <span class="label">Exselent</span>
+    </button>
+
+    <button class="btn" data-sound="sounds/and-you.mp3">
+      <span class="emoji">👉</span>
+      <span class="label">And You</span>
+    </button>
+
+    <button class="btn" data-sound="sounds/ooo-yes.mp3">
+      <span class="emoji">🤤</span>
+      <span class="label">Ooo Yes</span>
+    </button>
+  </div>
+
+  <div class="switches">
+    <div class="switch">
+      <span class="name">🥁 Bongo</span>
+      <div class="toggle" data-loop="sounds/loop-bongo.mp3" role="switch" aria-checked="false" tabindex="0">
+        <span class="knob"></span>
+      </div>
+      <span class="state">OFF</span>
+    </div>
+
+    <div class="switch">
+      <span class="name">🚀 The Launch</span>
+      <div class="toggle" data-loop="sounds/loop-launch.mp3" role="switch" aria-checked="false" tabindex="0">
+        <span class="knob"></span>
+      </div>
+      <span class="state">OFF</span>
+    </div>
+  </div>
+
+  <script>
+    // Botones de un disparo
+    document.querySelectorAll('.btn[data-sound]').forEach((btn) => {
+      const audio = new Audio(btn.dataset.sound);
+      audio.preload = 'auto';
+      btn.addEventListener('click', () => {
+        audio.currentTime = 0;
+        audio.play();
+        btn.classList.add('pressed');
+        setTimeout(() => btn.classList.remove('pressed'), 130);
+      });
+    });
+
+    // Palancas de loop continuo
+    document.querySelectorAll('.toggle[data-loop]').forEach((toggle) => {
+      const audio = new Audio(toggle.dataset.loop);
+      audio.loop = true;
+      audio.preload = 'auto';
+      const state = toggle.parentElement.querySelector('.state');
+
+      const flip = () => {
+        const on = toggle.classList.toggle('on');
+        toggle.setAttribute('aria-checked', on ? 'true' : 'false');
+        state.textContent = on ? 'ON' : 'OFF';
+        if (on) {
+          audio.currentTime = 0;
+          audio.play();
+        } else {
+          audio.pause();
+        }
+      };
+
+      toggle.addEventListener('click', flip);
+      toggle.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); }
+      });
+    });
+  </script>
+</body>
+</html>
