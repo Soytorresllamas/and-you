@@ -31,7 +31,15 @@
       justify-content: center;
       align-items: center;
       width: 100%;
-      max-width: 900px;
+      max-width: 1100px;
+    }
+
+    /* Desktop: los 4 botones en una sola linea */
+    @media (min-width: 760px) {
+      .board {
+        flex-wrap: nowrap;
+        gap: clamp(20px, 3vw, 40px);
+      }
     }
 
     /* Botón 3D brillante totalmente redondo */
